@@ -63,29 +63,17 @@ const { class: className } = Astro.props;
 </script>
 
 <style>
-  /* A fade behind the title, spreading up from the middle of the bottom
-     edge, keeps the text readable and leaves the rest of the video clear. */
+  /* A fade rising from the bottom edge keeps the title readable and leaves
+     the upper part of the video clear. */
   .hero-fade {
     --navy: 5 11 27;
-    background-image: radial-gradient(
-      ellipse 130% 65% at 50% 100%,
+    background-image: linear-gradient(
+      to top,
       rgb(var(--navy) / 0.78) 0%,
-      rgb(var(--navy) / 0.6) 40%,
-      rgb(var(--navy) / 0.26) 75%,
-      transparent 100%
+      rgb(var(--navy) / 0.6) 18%,
+      rgb(var(--navy) / 0.28) 36%,
+      transparent 55%
     );
-  }
-
-  @media (min-width: 48rem) {
-    .hero-fade {
-      background-image: radial-gradient(
-        ellipse 60% 70% at 50% 100%,
-        rgb(var(--navy) / 0.78) 0%,
-        rgb(var(--navy) / 0.6) 35%,
-        rgb(var(--navy) / 0.28) 68%,
-        transparent 100%
-      );
-    }
   }
 </style>
 
