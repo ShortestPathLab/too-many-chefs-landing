@@ -50,11 +50,14 @@ script to change which kitchens appear.
 
 ## Deploy
 
-`.github/workflows/deploy.yml` builds the site and publishes `dist/` to GitHub
-Pages on every push to `main`. In the repository settings, set the Pages source
-to GitHub Actions.
+The site is published at https://toomanychefs.pathfinding.ai through GitHub
+Pages. `.github/workflows/deploy.yml` builds the site and publishes `dist/` on
+every push to `main`. It can also be run by hand from the Actions tab.
 
-The build reads the site address from `SITE_URL`. The workflow uses the
-`SITE_URL` repository variable if one is set, and the default Pages address
-otherwise. Local builds without `SITE_URL` leave out canonical URLs and the
-sitemap.
+In the repository settings, Pages uses GitHub Actions as its source and
+`toomanychefs.pathfinding.ai` as its custom domain. `public/CNAME` records the
+domain in the source. The domain's DNS needs a `CNAME` record for
+`toomanychefs` pointing to `shortestpathlab.github.io`.
+
+Canonical links and the sitemap use the production address. To build for
+another address, set `SITE_URL` locally or as a repository variable.

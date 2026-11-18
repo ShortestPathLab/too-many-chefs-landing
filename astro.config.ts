@@ -2,12 +2,12 @@ import sitemap from "@astrojs/sitemap";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 
-// Set SITE_URL once the hosting address is known. Without it, builds leave
-// out canonical URLs and the sitemap.
-const site = process.env.SITE_URL;
+// The production address, also recorded in public/CNAME. Set SITE_URL to
+// build for another address.
+const site = process.env.SITE_URL || "https://toomanychefs.pathfinding.ai";
 
 export default defineConfig({
   site,
-  integrations: site ? [sitemap()] : [],
+  integrations: [sitemap()],
   vite: { plugins: [tailwindcss()] },
 });
