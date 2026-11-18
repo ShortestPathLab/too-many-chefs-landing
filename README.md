@@ -42,11 +42,19 @@ again after the simulator changes, run:
 uv run scripts/record-hero.py --simulator ../overcooked-2
 ```
 
-The script runs the simulator's default controller on the levels listed at the
-top of the file, replays each run in headless Chromium with the panels hidden,
-and joins a six-second clip from each into the video and its poster image. It
-needs uv, ffmpeg and a Chromium installed for Playwright. Edit `LEVELS` in the
-script to change which kitchens appear.
+The script runs the simulator's default controller on the kitchens listed in
+`CLIPS` at the top of the file, replays each run in headless Chromium with the
+panels hidden, and joins a seven-second clip from each into the video and its
+poster image. It needs uv, ffmpeg and a Chromium installed for Playwright.
+
+Most of the kitchens are crowded variants of the simulator's own levels, with
+six or eight chefs. They live in `scripts/levels/`. `pvp_8p.yaml` is the
+simulator's 2v2 kitchen with four chefs on each team.
+
+The default controller leaves a chef standing still when the plan gives it
+nothing to do. For the recording, `scripts/wander.py` makes those chefs walk
+about at random, so the crowded kitchens look busy. Chefs that are cooking or
+carrying something are not affected.
 
 ## Deploy
 

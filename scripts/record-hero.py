@@ -5,8 +5,9 @@
 # ///
 """Record the home page's gameplay montage from the simulator.
 
-For each level in LEVELS the script runs the simulator's default controller
-without a window and saves a recording. It then serves that recording with
+For each entry in CLIPS the script runs the simulator's default controller
+without a window and saves a recording. Chefs the controller leaves idle
+wander about (see wander.py), so crowded kitchens look busy. It then serves that recording with
 ``cook replay --no-window``, opens it in headless Chromium with the panels
 hidden, and captures the kitchen as video. ffmpeg cuts a clip from each
 capture and joins the clips into ``public/videos/hero.mp4`` and ``hero.webm``,
@@ -38,19 +39,25 @@ ROOT = Path(__file__).resolve().parent.parent
 VIDEO_OUT = ROOT / "public" / "videos"
 POSTER_OUT = ROOT / "public" / "images" / "hero-poster.jpg"
 
-# Levels in montage order, relative to the simulator's levels/ directory.
-LEVELS = [
-    "0_i_can_cook/2_2_cheeseburger_from_scratch.yaml",
-    "1_we_can_cook/1_2_sushi_divided_3p.yaml",
-    "2_overcooked/0_0_black_forest_cake_shared_stations_2p.yaml",
-    "1_we_can_cook/2_1_chicken_and_chips_parallel_stations_4p.yaml",
-    "1_we_can_cook/0_3_cheeseburger_divided_pass_through_2p.yaml",
-    "2_overcooked/3_0_sushi_rush_hour_3p.yaml",
+LEVELS_DIR = Path(__file__).resolve().parent / "levels"
+
+# Clips in montage order. A level path is relative to the simulator's levels/
+# directory, or to scripts/levels/ here when it starts with "./". Those are
+# crowded variants of the simulator's own kitchens, with six or eight chefs.
+# "steps" caps the run for kitchens whose orders never run out, and "skip"
+# is how many seconds of the replay to pass over before the clip starts.
+CLIPS = [
+    {"level": "./pvp_8p.yaml", "steps": 150, "skip": 3.0},
+    {"level": "./sushi_8p.yaml", "steps": 150},
+    {"level": "./chicken_6p.yaml", "steps": 150},
+    {"level": "./cake_6p.yaml", "steps": 150},
+    {"level": "2_overcooked/3_0_sushi_rush_hour_3p.yaml"},
 ]
 
 SIZE = (1280, 720)
 SERVER_START_TIMEOUT = 40.0
 PAGE_READY_TIMEOUT = 30.0
+CAPTURE_ATTEMPTS = 3
 
 # Counts sprite sheet loads, which Playwright's network idle state misses.
 TRACK_IMAGE_LOADS = """
@@ -82,10 +89,17 @@ PAGE_READY = """
 """
 
 
-def cook(simulator: Path, *args: str, **kwargs) -> subprocess.Popen:
+# Runs ``cook`` with idle chefs wandering about. See its docstring.
+WANDER = Path(__file__).resolve().parent / "wander.py"
+
+
+def cook(
+    simulator: Path, *args: str, wander: bool = False, **kwargs
+) -> subprocess.Popen:
     env = {**os.environ, "PYTHONUNBUFFERED": "1", "TERM": "dumb"}
+    command = ["python", str(WANDER)] if wander else ["cook"]
     return subprocess.Popen(
-        ["uv", "run", "cook", *args],
+        ["uv", "run", *command, *args],
         cwd=simulator,
         env=env,
         stdout=subprocess.PIPE,
@@ -95,22 +109,39 @@ def cook(simulator: Path, *args: str, **kwargs) -> subprocess.Popen:
     )
 
 
-def record_run(simulator: Path, level: str, out: Path) -> None:
+def level_path(simulator: Path, level: str, work: Path) -> Path:
+    if not level.startswith("./"):
+        return simulator / "levels" / level
+    # The simulator finds its catalogue of sprites and recipes by walking up
+    # from the level file, so stage our own levels beside a link to it.
+    catalog = work / "catalog"
+    if not catalog.exists():
+        catalog.symlink_to(simulator / "catalog", target_is_directory=True)
+    staged = work / "levels" / level[2:]
+    staged.parent.mkdir(exist_ok=True)
+    shutil.copyfile(LEVELS_DIR / level[2:], staged)
+    return staged
+
+
+def record_run(simulator: Path, level: Path, steps: int | None, out: Path) -> None:
     """Run the default controller on a level and save the recording."""
+    limit = ["--max-timesteps", str(steps)] if steps else []
     process = cook(
         simulator,
         "agent",
         "--level",
-        f"levels/{level}",
+        str(level),
         "--headless",
         "--record",
         "--recording-out-file",
         str(out),
         "--quiet",
+        *limit,
+        wander=True,
     )
     output, _ = process.communicate(timeout=300)
-    if process.returncode != 0 or '"reason": "completed"' not in output:
-        raise RuntimeError(f"{level} did not complete:\n{output[-2000:]}")
+    if process.returncode != 0 or not out.exists():
+        raise RuntimeError(f"{level} did not run:\n{output[-2000:]}")
 
 
 class ReplayServer:
@@ -196,12 +227,13 @@ def ffmpeg(*args: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--simulator", type=Path, default=ROOT.parent / "overcooked-2")
-    parser.add_argument("--clip-seconds", type=float, default=6.0)
+    parser.add_argument("--clip-seconds", type=float, default=7.0)
     parser.add_argument("--skip-seconds", type=float, default=1.0)
     parser.add_argument("--keep", type=Path, help="Keep the raw captures in this folder")
     options = parser.parse_args()
     simulator = options.simulator.resolve()
 
+    from playwright.sync_api import TimeoutError as PlaywrightTimeout
     from playwright.sync_api import sync_playwright
 
     work = options.keep or Path(tempfile.mkdtemp(prefix="hero-"))
@@ -210,19 +242,29 @@ def main() -> None:
     try:
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch()
-            for index, level in enumerate(LEVELS):
-                print(f"[{index + 1}/{len(LEVELS)}] {level}")
+            for index, spec in enumerate(CLIPS):
+                print(f"[{index + 1}/{len(CLIPS)}] {spec['level']}")
                 recording = work / f"{index}.yaml"
-                record_run(simulator, level, recording)
-                server = ReplayServer(simulator, recording)
-                try:
-                    length = options.skip_seconds + options.clip_seconds
-                    raw, offset = capture(browser, server.wait(), length, work)
-                finally:
-                    server.stop()
+                level = level_path(simulator, spec["level"], work)
+                record_run(simulator, level, spec.get("steps"), recording)
+                skip = spec.get("skip", options.skip_seconds)
+                length = skip + options.clip_seconds
+                # A slow page load occasionally trips the ready check, so
+                # each replay gets a few attempts.
+                for attempt in range(CAPTURE_ATTEMPTS):
+                    server = ReplayServer(simulator, recording)
+                    try:
+                        raw, offset = capture(browser, server.wait(), length, work)
+                        break
+                    except PlaywrightTimeout:
+                        if attempt == CAPTURE_ATTEMPTS - 1:
+                            raise
+                        print("  page was slow to load, trying again")
+                    finally:
+                        server.stop()
                 clip = work / f"clip-{index}.mp4"
                 ffmpeg(
-                    "-ss", f"{offset + options.skip_seconds:.2f}",
+                    "-ss", f"{offset + skip:.2f}",
                     "-t", f"{options.clip_seconds:.2f}",
                     "-i", str(raw),
                     "-an", "-r", "25", "-c:v", "libx264", "-crf", "12",
