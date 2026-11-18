@@ -1,0 +1,24 @@
+---
+import type { Resource } from "@config";
+
+export interface Props {
+  resource: Resource;
+  showDesc?: boolean;
+  class?: string;
+}
+
+const { resource, showDesc = false, class: className } = Astro.props;
+const Tag = resource.href ? "a" : "div";
+---
+
+<Tag
+  href={resource.href}
+  class:list={["tile flex flex-col justify-center gap-1 px-7 py-5", className]}
+>
+  <span class="label">
+    {resource.kind}
+    {!resource.href && " · Coming soon"}
+  </span>
+  <span class="title text-3xl">{resource.title}</span>
+  {showDesc && <span class="text-muted">{resource.desc}</span>}
+</Tag>

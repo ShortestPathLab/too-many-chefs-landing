@@ -29,7 +29,24 @@ The site is served at http://localhost:4321.
 - `src/layouts/Layout.astro`: the page shell shared by every page.
 - `src/components/`: header and footer.
 - `src/pages/`: one file per page (`index`, `resources`, `creators`, `404`).
-- `src/styles/global.css`: Tailwind entry point and global styles.
+- `src/styles/global.css`: Tailwind entry point, colours, fonts and the tile
+  styles.
+- `scripts/record-hero.py`: records the gameplay montage on the home page.
+
+## Gameplay montage
+
+The home page plays `public/videos/hero.mp4` (or `hero.webm`). To record it
+again after the simulator changes, run:
+
+```bash
+uv run scripts/record-hero.py --simulator ../overcooked-2
+```
+
+The script runs the simulator's default controller on the levels listed at the
+top of the file, replays each run in headless Chromium with the panels hidden,
+and joins a six-second clip from each into the video and its poster image. It
+needs uv, ffmpeg and a Chromium installed for Playwright. Edit `LEVELS` in the
+script to change which kitchens appear.
 
 ## Deploy
 

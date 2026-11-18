@@ -1,1 +1,70 @@
 @import "tailwindcss";
+
+@theme {
+  --color-navy: #050b1b;
+  --color-navy-raised: #0c1630;
+  --color-line: #25345e;
+  --color-pink: #f7a8b8;
+  --color-pink-soft: #fde3e8;
+  --color-muted: #c3cbe2;
+
+  --font-body: "Geist Pixel", ui-monospace, monospace;
+  --font-title: "Jersey 15", "Geist Pixel", ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    background: var(--color-navy);
+    color: white;
+    font-family: var(--font-body);
+    line-height: 1.55;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-pink);
+    outline-offset: 3px;
+  }
+}
+
+@layer components {
+  .tile {
+    border-radius: 1rem;
+    background: var(--color-navy-raised);
+    min-width: 0;
+  }
+
+  a.tile {
+    transition: transform 150ms ease;
+  }
+
+  a.tile:hover {
+    transform: translateY(-2px);
+  }
+
+  .title {
+    font-family: var(--font-title);
+    font-weight: 400;
+    line-height: 0.95;
+  }
+
+  .label {
+    color: var(--color-pink);
+    font-size: 0.9375rem;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a.tile {
+    transition: none;
+  }
+
+  a.tile:hover {
+    transform: none;
+  }
+}

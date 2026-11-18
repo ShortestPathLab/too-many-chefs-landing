@@ -1,10 +1,13 @@
 ---
-import { LINKS, SITE } from "@config";
+import { SITE } from "@config";
 ---
 
-<footer class="mx-auto flex w-full max-w-5xl gap-4 px-4 py-6 text-sm">
-  <span>{SITE.title}</span>
-  <a href={LINKS.github} class="ml-auto">
-    GitHub
-  </a>
+<footer class="text-muted flex flex-wrap gap-x-8 gap-y-2 px-2 py-2.5 text-[0.9375rem]">
+  <span>
+    {SITE.title} by{" "}
+    <a href={SITE.lab.href} class="hover:text-pink underline">
+      {SITE.lab.name}
+    </a>
+  </span>
+  <span class="ml-auto">MIT licence</span>
 </footer>

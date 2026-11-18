@@ -1,0 +1,121 @@
+---
+// The hero tile. The gameplay montage plays behind its content, faded into
+// the background colour. Re-record it with scripts/record-hero.py.
+export interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<section
+  class:list={[
+    "tile relative isolate flex flex-col overflow-hidden px-9 pt-5 pb-10",
+    className,
+  ]}
+  data-hero-video
+>
+  <video
+    class="absolute inset-0 -z-20 h-full w-full object-cover"
+    poster="/images/hero-poster.jpg"
+    muted
+    loop
+    playsinline
+    preload="metadata"
+    aria-hidden="true"
+  >
+    <source src="/videos/hero.webm" type="video/webm" />
+    <source src="/videos/hero.mp4" type="video/mp4" />
+  </video>
+  <div class="hero-fade absolute inset-0 -z-10"></div>
+  <slot name="top" />
+  <div class="mt-auto flex flex-col items-center gap-4 pt-10 text-center">
+    <slot />
+  </div>
+  <button
+    type="button"
+    class="bg-navy/80 hover:text-pink absolute right-3 bottom-3 min-h-11 rounded-full px-4 text-[0.9375rem]"
+    aria-label="Play background video"
+  >
+    Play
+  </button>
+</section>
+
+<script>
+  for (const root of document.querySelectorAll("[data-hero-video]")) {
+    const video = root.querySelector("video")!;
+    const button = root.querySelector("button")!;
+    const sync = () => {
+      const action = video.paused ? "Play" : "Pause";
+      button.textContent = action;
+      button.setAttribute("aria-label", `${action} background video`);
+    };
+    video.addEventListener("play", sync);
+    video.addEventListener("pause", sync);
+    button.addEventListener("click", () =>
+      video.paused ? video.play() : video.pause()
+    );
+    // Autoplay only for visitors who have not asked for reduced motion.
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      video.play().catch(() => {});
+    }
+  }
+</script>
+
+<style>
+  /* A fade behind the title, spreading up from the middle of the bottom
+     edge, keeps the text readable and leaves the rest of the video clear. */
+  .hero-fade {
+    --navy: 5 11 27;
+    background-image: radial-gradient(
+      ellipse 130% 65% at 50% 100%,
+      rgb(var(--navy) / 0.78) 0%,
+      rgb(var(--navy) / 0.6) 40%,
+      rgb(var(--navy) / 0.26) 75%,
+      transparent 100%
+    );
+  }
+
+  @media (min-width: 48rem) {
+    .hero-fade {
+      background-image: radial-gradient(
+        ellipse 60% 70% at 50% 100%,
+        rgb(var(--navy) / 0.78) 0%,
+        rgb(var(--navy) / 0.6) 35%,
+        rgb(var(--navy) / 0.28) 68%,
+        transparent 100%
+      );
+    }
+  }
+</style>
+
+<!-- Kept out of the build's CSS minifier, which folds animation-timeline into
+     the animation shorthand, where browsers ignore it. -->
+<style is:inline>
+  /* Parallax: as the hero scrolls away, the video drifts down inside its
+     tile, so it moves up the screen more slowly than the page and reads as
+     further back. The video is 30% taller than the tile and centred on it,
+     which leaves room for the drift. Browsers without scroll-driven animations, and visitors who
+     ask for reduced motion, get the still layout. */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      [data-hero-video] {
+        view-timeline-name: --hero;
+      }
+
+      [data-hero-video] > video {
+        top: -15%;
+        height: 130%;
+        animation: hero-drift linear both;
+        animation-timeline: --hero;
+        animation-range: exit;
+      }
+    }
+  }
+
+  @keyframes hero-drift {
+    to {
+      transform: translateY(11.5%);
+    }
+  }
+</style>

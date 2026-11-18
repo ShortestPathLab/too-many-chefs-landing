@@ -1,9 +1,100 @@
 ---
+import Header from "@components/Header.astro";
+import HeroVideo from "@components/HeroVideo.astro";
+import ResourceTile from "@components/ResourceTile.astro";
 import Layout from "@layouts/Layout.astro";
-import { SITE } from "@config";
+import { CREATORS, SITE, resource } from "@config";
+// For the "Three ways into the kitchen" row, which is commented out below.
+// import { Image } from "astro:assets";
+// import { MODES } from "@config";
+// import playMode from "../assets/play-mode.png";
+
+const code = resource("code");
+const video = resource("video");
+const VideoTag = video.href ? "a" : "div";
 ---
 
-<Layout>
-  <h1 class="text-3xl font-semibold">{SITE.title}</h1>
-  <p>{SITE.tagline}</p>
+<Layout header={false}>
+  <HeroVideo class="min-h-[560px] md:h-[92svh] md:min-h-[420px]">
+    <Header slot="top" inset />
+    <h1 class="title -mb-[0.14em] text-6xl md:text-7xl lg:text-8xl">
+      {SITE.title}
+    </h1>
+    <p class="text-pink text-2xl leading-snug md:text-3xl">{SITE.tagline}</p>
+    <p class="text-muted max-w-xl">
+      A configurable cooking simulator for AI research and education.
+    </p>
+  </HeroVideo>
+
+  <section id="resources" class="grid gap-4 md:grid-cols-4">
+    <a
+      href={code.href}
+      class="tile !bg-pink text-navy flex min-h-60 flex-col gap-2 p-7"
+    >
+      <span class="text-[0.9375rem]">{code.kind}</span>
+      <span class="title mt-auto text-5xl">Get the code</span>
+      <span>{code.desc}</span>
+    </a>
+    <VideoTag
+      href={video.href}
+      class="tile border-pink flex min-h-60 flex-col items-start gap-2 border p-7 md:col-span-2"
+    >
+      <span class="label">
+        {video.kind}
+        {!video.href && " · Coming soon"}
+      </span>
+      <span class="bg-pink m-auto flex size-[72px] items-center justify-center rounded-full">
+        <svg
+          aria-hidden="true"
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          class="fill-navy"
+        >
+          <path d="M8 5v14l11-7z"></path>
+        </svg>
+      </span>
+      <span class="title text-4xl">Watch the demo video</span>
+    </VideoTag>
+    <div class="grid gap-4">
+      <ResourceTile resource={resource("guide")} />
+      <ResourceTile resource={resource("paper")} />
+    </div>
+  </section>
+
+  {/*
+  <section class="grid gap-4 md:grid-cols-5">
+    <div class="tile overflow-hidden md:col-span-3">
+      <Image
+        src={playMode}
+        alt="Two chefs in a play-mode kitchen, with four orders on the board"
+        widths={[640, 960, 1280]}
+        sizes="(min-width: 768px) 60vw, 100vw"
+        class="h-full w-full object-cover"
+      />
+    </div>
+    <div class="tile flex flex-col justify-center gap-5 p-8 md:col-span-2">
+      <h2 class="title text-5xl">Three ways into the kitchen</h2>
+      {MODES.map(mode => (
+        <div>
+          <h3 class="text-pink text-lg">{mode.name}</h3>
+          <p class="text-muted">{mode.desc}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+  */}
+
+  <section
+    id="creators"
+    class="tile flex flex-wrap items-center gap-x-12 gap-y-5 px-8 py-7"
+  >
+    <h2 class="title text-5xl">Creators</h2>
+    {CREATORS.map(creator => (
+      <div>
+        <div>{creator.name}</div>
+        <div class="text-muted text-[0.9375rem]">{creator.affiliation}</div>
+      </div>
+    ))}
+  </section>
 </Layout>

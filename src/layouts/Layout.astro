@@ -7,12 +7,19 @@ import { SITE } from "@config";
 export interface Props {
   title?: string;
   description?: string;
+  // Set to false when the page places the header itself, as the home page does.
+  header?: boolean;
 }
 
-const { title, description = SITE.desc } = Astro.props;
-const pageTitle = title ? `${title} | ${SITE.title}` : SITE.title;
+const { title, description = SITE.desc, header = true } = Astro.props;
+const pageTitle = title
+  ? `${title} | ${SITE.title}`
+  : `${SITE.title} ${SITE.tagline}`;
 const canonicalURL = Astro.site
   ? new URL(Astro.url.pathname, Astro.site).href
+  : undefined;
+const socialImage = Astro.site
+  ? new URL("/images/hero-poster.jpg", Astro.site).href
   : undefined;
 ---
 
@@ -21,6 +28,7 @@ const canonicalURL = Astro.site
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#050b1b" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     {canonicalURL && <link rel="canonical" href={canonicalURL} />}
     {Astro.site && <link rel="sitemap" href="/sitemap-index.xml" />}
@@ -32,12 +40,23 @@ const canonicalURL = Astro.site
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
     {canonicalURL && <meta property="og:url" content={canonicalURL} />}
+    {socialImage && <meta property="og:image" content={socialImage} />}
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist+Pixel&family=Jersey+15&display=swap"
+      rel="stylesheet"
+    />
   </head>
-  <body class="flex min-h-screen flex-col">
-    <Header />
-    <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
-      <slot />
-    </main>
-    <Footer />
+  <body class="flex min-h-screen flex-col p-4">
+    <div class="flex w-full flex-1 flex-col gap-4">
+      {header && <Header />}
+      <main class="flex flex-1 flex-col gap-4">
+        <slot />
+      </main>
+      <Footer />
+    </div>
   </body>
 </html>
